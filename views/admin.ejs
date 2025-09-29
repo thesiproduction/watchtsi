@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    table, th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #eee; }
+    input, button { padding: 5px; margin: 5px 0; }
+    form { display: inline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin Panel</h1>
+    <p><a href="/logout">Logout</a></p>
+
+    <!-- Users -->
+    <h2>Users</h2>
+    <table>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Role</th>
+        <th>Actions</th>
+      </tr>
+      <% users.forEach(user => { %>
+        <tr>
+          <td><%= user.id %></td>
+          <td><%= user.username %></td>
+          <td><%= user.role %></td>
+          <td>
+            <% if(user.role !== 'admin'){ %>
+            <form action="/admin/delete-user" method="POST" style="display:inline">
+              <input type="hidden" name="id" value="<%= user.id %>">
+              <button type="submit">Delete</button>
+            </form>
+            <% } %>
+          </td>
+        </tr>
+      <% }) %>
+    </table>
+
+    <h3>Add User</h3>
+    <form action="/admin/add-user" method="POST">
+      <input type="text" name="username" placeholder="Username" required>
+      <input type="password" name="password" placeholder="Password" required>
+      <button type="submit">Add User</button>
+    </form>
+
+    <!-- Videos -->
+    <h2>Videos</h2>
+    <table>
+      <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Filename</th>
+        <th>Actions</th>
+      </tr>
+      <% videos.forEach(video => { %>
+        <tr>
+          <td><%= video.id %></td>
+          <td><%= video.title %></td>
+          <td><%= video.filename %></td>
+          <td>
+            <form action="/admin/delete-video" method="POST">
+              <input type="hidden" name="id" value="<%= video.id %>">
+              <button type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </table>
+
+    <h3>Add Video</h3>
+    <form action="/admin/add-video" method="POST">
+      <input type="text" name="title" placeholder="Video Title" required>
+      <input type="text" name="filename" placeholder="Filename (example.mp4)" required>
+      <button type="submit">Add Video</button>
+    </form>
+    <p>⚠️ Make sure the video file is uploaded in the <strong>/videos</strong> folder and filename matches exactly.</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Videos</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f0f0; }
+    .container { max-width: 800px; margin: 50px auto; padding: 20px; background: #fff; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+    h2 { margin-bottom: 20px; }
+    .video-item { margin-bottom: 30px; }
+    video { width: 100%; max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 5px; }
+    .top-links { margin-bottom: 20px; }
+    .top-links a { margin-right: 15px; text-decoration: none; color: #333; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Welcome, <%= username %>!</h2>
+
+    <!-- Top Links -->
+    <div class="top-links">
+      <a href="/change-password">Change Password</a>
+      <a href="/logout">Logout</a>
+    </div>
+
+    <% if (videos.length === 0) { %>
+      <p>No videos available.</p>
+    <% } %>
+
+    <% videos.forEach(video => { %>
+      <div class="video-item">
+        <h3><%= video.title %></h3>
+        <video controls>
+          <source src="/videos/<%= video.filename %>" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+    <% }) %>
+  </div>
+</body>
+</html>
