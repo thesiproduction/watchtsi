@@ -35,7 +35,10 @@
     <% videos.forEach(video => { %>
       <div class="video-item">
         <h4><%= video.title %></h4>
-        <video controls>
+        <video controls 
+               controlsList="nodownload noremoteplayback" 
+               disablePictureInPicture 
+               oncontextmenu="return false;">
           <source src="/videos/<%= video.filename %>" type="video/mp4">
           Your browser does not support the video tag.
         </video>
@@ -44,5 +47,6 @@
   </div>
 </body>
 </html>
+
 
 
