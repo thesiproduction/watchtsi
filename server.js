@@ -128,14 +128,19 @@ app.get('/videos', (req, res) => {
   });
 });
 
-// View videos inside a folder
-app.get('/videos/folder/:folderId', (req, res) => {
+// ✅ View videos inside a folder (handles empty folders too)
+app.get('/videos/:folderId', (req, res) => {
   if (!req.session.user) return res.redirect('/');
   const folderId = req.params.folderId;
   db.get("SELECT * FROM folders WHERE id = ?", [folderId], (err, folder) => {
     if (!folder) return res.redirect('/videos');
     db.all("SELECT * FROM videos WHERE folder_id = ?", [folderId], (err, videos) => {
-      res.render('videos', { folder, videos, username: req.session.user.username });
+      if (videos.length === 0) {
+        // Pass a flag for empty folder
+        res.render('videos', { folder, videos: [], empty: true, username: req.session.user.username });
+      } else {
+        res.render('videos', { folder, videos, empty: false, username: req.session.user.username });
+      }
     });
   });
 });
@@ -177,6 +182,8 @@ app.get('/logout', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
+
 
 
 
