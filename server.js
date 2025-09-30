@@ -22,7 +22,19 @@ const db = new sqlite3.Database(path.join(dbDir, 'database.sqlite'));
 db.serialize(() => {
   db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, password TEXT, role TEXT)");
   db.run("CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY, name TEXT)");
-  db.run("CREATE TABLE IF NOT EXISTS videos (id INTEGER PRIMARY KEY, title TEXT, filename TEXT, folder_id INTEGER)");
+  db.run("CREATE TABLE IF NOT EXISTS videos (id INTEGER PRIMARY KEY, title TEXT, filename TEXT)");
+
+  // 🔄 Migration: add folder_id if missing
+  db.all("PRAGMA table_info(videos)", (err, columns) => {
+    if (err) return console.error("❌ PRAGMA error:", err);
+    const hasFolderId = columns.some(col => col.name === "folder_id");
+    if (!hasFolderId) {
+      db.run("ALTER TABLE videos ADD COLUMN folder_id INTEGER", (err) => {
+        if (err) console.error("❌ Could not add folder_id:", err.message);
+        else console.log("✅ Added missing folder_id column to videos table");
+      });
+    }
+  });
 
   // Create default admin if not exists
   db.get("SELECT * FROM users WHERE username = 'admin'", (err, row) => {
@@ -43,7 +55,7 @@ app.set('view engine', 'ejs');
 // 🔒 Security headers to reduce recording/downloading
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "DENY"); // block embedding in iframes
+  res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "no-referrer");
   res.setHeader("Permissions-Policy", "picture-in-picture=(), fullscreen=()");
   next();
@@ -100,7 +112,7 @@ app.post('/admin/delete-folder', (req, res) => {
   });
 });
 
-// ✅ Add video (fixed to handle empty folder_id and log errors)
+// ✅ Add video
 app.post('/admin/add-video', (req, res) => {
   const { title, filename, folder_id } = req.body;
   const folderId = folder_id && folder_id.trim() !== "" ? parseInt(folder_id, 10) : null;
@@ -135,7 +147,7 @@ app.get('/videos', (req, res) => {
   });
 });
 
-// ✅ View videos inside a folder (handles empty folders too)
+// ✅ View videos inside a folder
 app.get('/videos/:folderId', (req, res) => {
   if (!req.session.user) return res.redirect('/');
   const folderId = req.params.folderId;
@@ -188,23 +200,4 @@ app.get('/logout', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
