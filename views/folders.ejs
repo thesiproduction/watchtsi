@@ -1,0 +1,56 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Video Folders</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f0f0; }
+    .container { max-width: 800px; margin: 50px auto; padding: 20px; background: #fff; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+    h2 { margin-bottom: 20px; }
+    .folder-list { list-style: none; padding: 0; }
+    .folder-item { margin: 10px 0; }
+    .folder-item a { 
+      display: block; 
+      padding: 10px; 
+      background: #f9f9f9; 
+      border: 1px solid #ccc; 
+      border-radius: 5px; 
+      text-decoration: none; 
+      color: #333; 
+      font-weight: bold; 
+      transition: background 0.3s; 
+    }
+    .folder-item a:hover { background: #e0e0e0; }
+    .top-links { margin-bottom: 20px; }
+    .top-links a { margin-right: 15px; text-decoration: none; color: #333; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Welcome, <%= username %>!</h2>
+
+    <!-- Top Links -->
+    <div class="top-links">
+      <a href="/change-password">Change Password</a>
+      <a href="/logout">Logout</a>
+    </div>
+
+    <h3>Your Video Folders</h3>
+
+    <% if (folders.length === 0) { %>
+      <p>No folders created yet.</p>
+    <% } %>
+
+    <ul class="folder-list">
+      <% folders.forEach(folder => { %>
+        <li class="folder-item">
+          <a href="/videos/<%= folder.id %>"><%= folder.name %></a>
+        </li>
+      <% }) %>
+    </ul>
+  </div>
+</body>
+</html>
+
