@@ -1,3 +1,4 @@
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const session = require('express-session');
@@ -5,7 +6,9 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
+
+// ✅ Use Replit’s assigned port (no hardcoding!)
+const PORT = process.env.PORT || 3000;
 
 // Database setup
 const db = new sqlite3.Database('./db/database.sqlite');
@@ -16,7 +19,7 @@ db.serialize(() => {
   // Create default admin if not exists
   db.get("SELECT * FROM users WHERE username = 'admin'", (err, row) => {
     if (!row) {
-      const adminPass = '>]763XFPTr<s'; // <-- Change manually
+      const adminPass = '>]763XFPTr<s'; // <-- Change manually if needed
       db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", ['admin', adminPass, 'admin']);
     }
   });
@@ -132,7 +135,8 @@ app.get('/logout', (req, res) => {
   res.redirect('/');
 });
 
-// Start server
+// ✅ Start server (Replit-friendly)
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
+
