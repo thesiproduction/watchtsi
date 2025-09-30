@@ -21,14 +21,8 @@ if (!fs.existsSync(dbDir)) {
 const db = new sqlite3.Database(path.join(dbDir, 'database.sqlite'));
 db.serialize(() => {
   db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, password TEXT, role TEXT)");
-  db.run("CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY, name TEXT NOT NULL)");
-  db.run(`CREATE TABLE IF NOT EXISTS videos (
-            id INTEGER PRIMARY KEY, 
-            title TEXT, 
-            filename TEXT, 
-            folder_id INTEGER,
-            FOREIGN KEY(folder_id) REFERENCES folders(id) ON DELETE CASCADE
-          )`);
+  db.run("CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY, name TEXT)");
+  db.run("CREATE TABLE IF NOT EXISTS videos (id INTEGER PRIMARY KEY, title TEXT, filename TEXT, folder_id INTEGER)");
 
   // Create default admin if not exists
   db.get("SELECT * FROM users WHERE username = 'admin'", (err, row) => {
@@ -45,6 +39,15 @@ app.use(session({ secret: 'secret-key', resave: false, saveUninitialized: true }
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/videos', express.static(path.join(__dirname, 'videos')));
 app.set('view engine', 'ejs');
+
+// 🔒 Security headers to reduce recording/downloading
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY"); // block embedding in iframes
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Permissions-Policy", "picture-in-picture=(), fullscreen=()");
+  next();
+});
 
 // ✅ Routes
 
@@ -87,11 +90,13 @@ app.post('/admin/add-folder', (req, res) => {
   });
 });
 
-// Delete folder (cascade deletes videos)
+// Delete folder (also deletes videos in it)
 app.post('/admin/delete-folder', (req, res) => {
   const { id } = req.body;
   db.run("DELETE FROM folders WHERE id = ?", [id], () => {
-    res.redirect('/admin');
+    db.run("DELETE FROM videos WHERE folder_id = ?", [id], () => {
+      res.redirect('/admin');
+    });
   });
 });
 
@@ -111,7 +116,7 @@ app.post('/admin/delete-video', (req, res) => {
   });
 });
 
-// Videos page (list folders first)
+// Videos page (list folders)
 app.get('/videos', (req, res) => {
   if (!req.session.user) return res.redirect('/');
   db.all("SELECT * FROM folders", (err, folders) => {
@@ -168,6 +173,8 @@ app.get('/logout', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
+
 
 
 
