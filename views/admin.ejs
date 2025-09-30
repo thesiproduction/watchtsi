@@ -48,6 +48,10 @@
     <form action="/admin/add-user" method="POST">
       <input type="text" name="username" placeholder="Username" required>
       <input type="password" name="password" placeholder="Password" required>
+      <select name="role" required>
+        <option value="user" selected>User</option>
+        <option value="admin">Admin</option>
+      </select>
       <button type="submit">Add User</button>
     </form>
 
@@ -126,6 +130,7 @@
   </div>
 </body>
 </html>
+
 
 
 
