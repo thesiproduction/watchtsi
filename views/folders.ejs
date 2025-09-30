@@ -26,6 +26,10 @@
     .top-links { margin-bottom: 20px; }
     .top-links a { margin-right: 15px; text-decoration: none; color: #333; font-weight: bold; }
   </style>
+  <script>
+    // Disable right click on entire page
+    document.addEventListener('contextmenu', event => event.preventDefault());
+  </script>
 </head>
 <body>
   <div class="container">
@@ -46,11 +50,13 @@
     <ul class="folder-list">
       <% folders.forEach(folder => { %>
         <li class="folder-item">
-          <a href="/videos/<%= folder.id %>"><%= folder.name %></a>
+          <a href="/videos/folder/<%= folder.id %>"><%= folder.name %></a>
         </li>
       <% }) %>
     </ul>
   </div>
 </body>
 </html>
+
+
 
