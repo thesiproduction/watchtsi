@@ -100,13 +100,18 @@ app.post('/admin/delete-folder', (req, res) => {
   });
 });
 
-// Add video (linked to folder)
+// ✅ Add video (linked to folder properly)
 app.post('/admin/add-video', (req, res) => {
   const { title, filename, folder_id } = req.body;
+  const folderId = folder_id && folder_id !== "" ? parseInt(folder_id) : null;
   db.run(
     "INSERT INTO videos (title, filename, folder_id) VALUES (?, ?, ?)",
-    [title, filename, folder_id || null],
-    () => {
+    [title, filename, folderId],
+    (err) => {
+      if (err) {
+        console.error("Error inserting video:", err);
+        return res.send("Error adding video");
+      }
       res.redirect('/admin');
     }
   );
@@ -135,8 +140,7 @@ app.get('/videos/:folderId', (req, res) => {
   db.get("SELECT * FROM folders WHERE id = ?", [folderId], (err, folder) => {
     if (!folder) return res.redirect('/videos');
     db.all("SELECT * FROM videos WHERE folder_id = ?", [folderId], (err, videos) => {
-      if (videos.length === 0) {
-        // Pass a flag for empty folder
+      if (!videos || videos.length === 0) {
         res.render('videos', { folder, videos: [], empty: true, username: req.session.user.username });
       } else {
         res.render('videos', { folder, videos, empty: false, username: req.session.user.username });
@@ -182,6 +186,8 @@ app.get('/logout', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
+
 
 
 
