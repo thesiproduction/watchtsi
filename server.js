@@ -21,8 +21,14 @@ if (!fs.existsSync(dbDir)) {
 const db = new sqlite3.Database(path.join(dbDir, 'database.sqlite'));
 db.serialize(() => {
   db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, password TEXT, role TEXT)");
-  db.run("CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY, name TEXT)");
-  db.run("CREATE TABLE IF NOT EXISTS videos (id INTEGER PRIMARY KEY, title TEXT, filename TEXT, folder_id INTEGER)");
+  db.run("CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY, name TEXT NOT NULL)");
+  db.run(`CREATE TABLE IF NOT EXISTS videos (
+            id INTEGER PRIMARY KEY, 
+            title TEXT, 
+            filename TEXT, 
+            folder_id INTEGER,
+            FOREIGN KEY(folder_id) REFERENCES folders(id) ON DELETE CASCADE
+          )`);
 
   // Create default admin if not exists
   db.get("SELECT * FROM users WHERE username = 'admin'", (err, row) => {
@@ -81,13 +87,11 @@ app.post('/admin/add-folder', (req, res) => {
   });
 });
 
-// Delete folder (also deletes videos in it)
+// Delete folder (cascade deletes videos)
 app.post('/admin/delete-folder', (req, res) => {
   const { id } = req.body;
   db.run("DELETE FROM folders WHERE id = ?", [id], () => {
-    db.run("DELETE FROM videos WHERE folder_id = ?", [id], () => {
-      res.redirect('/admin');
-    });
+    res.redirect('/admin');
   });
 });
 
@@ -107,7 +111,7 @@ app.post('/admin/delete-video', (req, res) => {
   });
 });
 
-// Videos page (list folders)
+// Videos page (list folders first)
 app.get('/videos', (req, res) => {
   if (!req.session.user) return res.redirect('/');
   db.all("SELECT * FROM folders", (err, folders) => {
@@ -164,6 +168,8 @@ app.get('/logout', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
+
 
 
 
