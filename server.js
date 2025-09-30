@@ -103,9 +103,13 @@ app.post('/admin/delete-folder', (req, res) => {
 // Add video (linked to folder)
 app.post('/admin/add-video', (req, res) => {
   const { title, filename, folder_id } = req.body;
-  db.run("INSERT INTO videos (title, filename, folder_id) VALUES (?, ?, ?)", [title, filename, folder_id || null], () => {
-    res.redirect('/admin');
-  });
+  db.run(
+    "INSERT INTO videos (title, filename, folder_id) VALUES (?, ?, ?)",
+    [title, filename, folder_id || null],
+    () => {
+      res.redirect('/admin');
+    }
+  );
 });
 
 // Delete video
@@ -173,6 +177,8 @@ app.get('/logout', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
+
 
 
 
