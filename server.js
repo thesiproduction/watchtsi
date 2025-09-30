@@ -52,7 +52,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/videos', express.static(path.join(__dirname, 'videos')));
 app.set('view engine', 'ejs');
 
-// 🔒 Security headers to reduce recording/downloading
+// 🔒 Security headers
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
@@ -91,6 +91,38 @@ app.get('/admin', (req, res) => {
         res.render('admin', { users, folders, videos });
       });
     });
+  });
+});
+
+// ✅ Add user
+app.post('/admin/add-user', (req, res) => {
+  if (!req.session.user || req.session.user.role !== 'admin') return res.redirect('/');
+  const { username, password, role } = req.body;
+  db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", [username, password, role || 'user'], (err) => {
+    if (err) {
+      console.error("❌ Error adding user:", err.message);
+      return res.send("Error adding user: " + err.message);
+    }
+    res.redirect('/admin');
+  });
+});
+
+// ✅ Delete user
+app.post('/admin/delete-user', (req, res) => {
+  if (!req.session.user || req.session.user.role !== 'admin') return res.redirect('/');
+  const { id } = req.body;
+
+  // prevent deleting self
+  if (parseInt(id) === req.session.user.id) {
+    return res.send("<script>alert('You cannot delete your own account'); window.location='/admin';</script>");
+  }
+
+  db.run("DELETE FROM users WHERE id = ?", [id], (err) => {
+    if (err) {
+      console.error("❌ Error deleting user:", err.message);
+      return res.send("Error deleting user: " + err.message);
+    }
+    res.redirect('/admin');
   });
 });
 
@@ -147,7 +179,7 @@ app.get('/videos', (req, res) => {
   });
 });
 
-// ✅ View videos inside a folder (fixed route to /videos/folder/:id)
+// ✅ View videos inside a folder
 app.get('/videos/folder/:folderId', (req, res) => {
   if (!req.session.user) return res.redirect('/');
   const folderId = req.params.folderId;
@@ -200,6 +232,8 @@ app.get('/logout', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
+
 
 
 
