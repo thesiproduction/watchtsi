@@ -28,25 +28,27 @@
 
     <h3><%= folder ? folder.name : 'All Videos' %></h3>
 
-    <% if (videos.length === 0) { %>
+    <% if (empty || videos.length === 0) { %>
       <p>No videos in this folder.</p>
+    <% } else { %>
+      <% videos.forEach(video => { %>
+        <div class="video-item">
+          <h4><%= video.title %></h4>
+          <video controls 
+                 controlsList="nodownload noremoteplayback" 
+                 disablePictureInPicture 
+                 oncontextmenu="return false;">
+            <source src="/videos/<%= video.filename %>" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      <% }) %>
     <% } %>
-
-    <% videos.forEach(video => { %>
-      <div class="video-item">
-        <h4><%= video.title %></h4>
-        <video controls 
-               controlsList="nodownload noremoteplayback" 
-               disablePictureInPicture 
-               oncontextmenu="return false;">
-          <source src="/videos/<%= video.filename %>" type="video/mp4">
-          Your browser does not support the video tag.
-        </video>
-      </div>
-    <% }) %>
   </div>
 </body>
 </html>
+
+
 
 
 
