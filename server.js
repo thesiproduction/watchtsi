@@ -100,18 +100,20 @@ app.post('/admin/delete-folder', (req, res) => {
   });
 });
 
-// ✅ Add video (linked to folder properly)
+// ✅ Add video (fixed to handle empty folder_id and log errors)
 app.post('/admin/add-video', (req, res) => {
   const { title, filename, folder_id } = req.body;
-  const folderId = folder_id && folder_id !== "" ? parseInt(folder_id) : null;
+  const folderId = folder_id && folder_id.trim() !== "" ? parseInt(folder_id, 10) : null;
+
   db.run(
     "INSERT INTO videos (title, filename, folder_id) VALUES (?, ?, ?)",
     [title, filename, folderId],
-    (err) => {
+    function (err) {
       if (err) {
-        console.error("Error inserting video:", err);
-        return res.send("Error adding video");
+        console.error("❌ Error inserting video:", err.message);
+        return res.send("Error adding video: " + err.message);
       }
+      console.log(`✅ Video added with ID ${this.lastID}, folder: ${folderId}`);
       res.redirect('/admin');
     }
   );
@@ -186,6 +188,7 @@ app.get('/logout', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
 
 
 
