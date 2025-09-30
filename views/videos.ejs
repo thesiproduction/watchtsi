@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Videos</title>
+  <title><%= folder ? folder.name : 'Videos' %></title>
   <link rel="stylesheet" href="/css/style.css">
   <style>
     body { font-family: Arial, sans-serif; background: #f0f0f0; }
@@ -20,17 +21,20 @@
 
     <!-- Top Links -->
     <div class="top-links">
+      <a href="/videos">⬅ Back to Folders</a>
       <a href="/change-password">Change Password</a>
       <a href="/logout">Logout</a>
     </div>
 
+    <h3><%= folder ? folder.name : 'All Videos' %></h3>
+
     <% if (videos.length === 0) { %>
-      <p>No videos available.</p>
+      <p>No videos in this folder.</p>
     <% } %>
 
     <% videos.forEach(video => { %>
       <div class="video-item">
-        <h3><%= video.title %></h3>
+        <h4><%= video.title %></h4>
         <video controls>
           <source src="/videos/<%= video.filename %>" type="video/mp4">
           Your browser does not support the video tag.
@@ -40,3 +44,5 @@
   </div>
 </body>
 </html>
+
+
