@@ -147,8 +147,8 @@ app.get('/videos', (req, res) => {
   });
 });
 
-// ✅ View videos inside a folder
-app.get('/videos/:folderId', (req, res) => {
+// ✅ View videos inside a folder (fixed route to /videos/folder/:id)
+app.get('/videos/folder/:folderId', (req, res) => {
   if (!req.session.user) return res.redirect('/');
   const folderId = req.params.folderId;
   db.get("SELECT * FROM folders WHERE id = ?", [folderId], (err, folder) => {
@@ -200,4 +200,6 @@ app.get('/logout', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
+
 
