@@ -21,7 +21,8 @@ if (!fs.existsSync(dbDir)) {
 const db = new sqlite3.Database(path.join(dbDir, 'database.sqlite'));
 db.serialize(() => {
   db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, password TEXT, role TEXT)");
-  db.run("CREATE TABLE IF NOT EXISTS videos (id INTEGER PRIMARY KEY, title TEXT, filename TEXT)");
+  db.run("CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY, name TEXT)");
+  db.run("CREATE TABLE IF NOT EXISTS videos (id INTEGER PRIMARY KEY, title TEXT, filename TEXT, folder_id INTEGER)");
 
   // Create default admin if not exists
   db.get("SELECT * FROM users WHERE username = 'admin'", (err, row) => {
@@ -64,32 +65,36 @@ app.post('/login', (req, res) => {
 app.get('/admin', (req, res) => {
   if (!req.session.user || req.session.user.role !== 'admin') return res.redirect('/');
   db.all("SELECT * FROM users", (err, users) => {
-    db.all("SELECT * FROM videos", (err, videos) => {
-      res.render('admin', { users, videos });
+    db.all("SELECT * FROM folders", (err, folders) => {
+      db.all("SELECT * FROM videos", (err, videos) => {
+        res.render('admin', { users, folders, videos });
+      });
     });
   });
 });
 
-// Add user
-app.post('/admin/add-user', (req, res) => {
-  const { username, password } = req.body;
-  db.run("INSERT INTO users (username, password, role) VALUES (?, ?, 'user')", [username, password], () => {
+// Add folder
+app.post('/admin/add-folder', (req, res) => {
+  const { name } = req.body;
+  db.run("INSERT INTO folders (name) VALUES (?)", [name], () => {
     res.redirect('/admin');
   });
 });
 
-// Delete user
-app.post('/admin/delete-user', (req, res) => {
+// Delete folder (also deletes videos in it)
+app.post('/admin/delete-folder', (req, res) => {
   const { id } = req.body;
-  db.run("DELETE FROM users WHERE id = ?", [id], () => {
-    res.redirect('/admin');
+  db.run("DELETE FROM folders WHERE id = ?", [id], () => {
+    db.run("DELETE FROM videos WHERE folder_id = ?", [id], () => {
+      res.redirect('/admin');
+    });
   });
 });
 
-// Add video
+// Add video (linked to folder)
 app.post('/admin/add-video', (req, res) => {
-  const { title, filename } = req.body;
-  db.run("INSERT INTO videos (title, filename) VALUES (?, ?)", [title, filename], () => {
+  const { title, filename, folder_id } = req.body;
+  db.run("INSERT INTO videos (title, filename, folder_id) VALUES (?, ?, ?)", [title, filename, folder_id || null], () => {
     res.redirect('/admin');
   });
 });
@@ -102,11 +107,23 @@ app.post('/admin/delete-video', (req, res) => {
   });
 });
 
-// Videos page for users
+// Videos page (list folders)
 app.get('/videos', (req, res) => {
   if (!req.session.user) return res.redirect('/');
-  db.all("SELECT * FROM videos", (err, videos) => {
-    res.render('videos', { videos, username: req.session.user.username });
+  db.all("SELECT * FROM folders", (err, folders) => {
+    res.render('folders', { folders, username: req.session.user.username });
+  });
+});
+
+// View videos inside a folder
+app.get('/videos/folder/:folderId', (req, res) => {
+  if (!req.session.user) return res.redirect('/');
+  const folderId = req.params.folderId;
+  db.get("SELECT * FROM folders WHERE id = ?", [folderId], (err, folder) => {
+    if (!folder) return res.redirect('/videos');
+    db.all("SELECT * FROM videos WHERE folder_id = ?", [folderId], (err, videos) => {
+      res.render('videos', { folder, videos, username: req.session.user.username });
+    });
   });
 });
 
@@ -147,6 +164,8 @@ app.get('/logout', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
+
 
 
 
