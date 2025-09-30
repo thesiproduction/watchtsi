@@ -14,6 +14,10 @@
     .top-links { margin-bottom: 20px; }
     .top-links a { margin-right: 15px; text-decoration: none; color: #333; font-weight: bold; }
   </style>
+  <script>
+    // Disable right-click everywhere on the page
+    document.addEventListener('contextmenu', event => event.preventDefault());
+  </script>
 </head>
 <body>
   <div class="container">
@@ -28,7 +32,7 @@
 
     <h3><%= folder ? folder.name : 'All Videos' %></h3>
 
-    <% if (empty || videos.length === 0) { %>
+    <% if (empty || !videos || videos.length === 0) { %>
       <p>No videos in this folder.</p>
     <% } else { %>
       <% videos.forEach(video => { %>
@@ -47,6 +51,8 @@
   </div>
 </body>
 </html>
+
+
 
 
 
