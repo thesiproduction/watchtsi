@@ -50,6 +50,7 @@
     <ul class="folder-list">
       <% folders.forEach(folder => { %>
         <li class="folder-item">
+          <!-- ✅ Updated link to match server.js -->
           <a href="/videos/folder/<%= folder.id %>"><%= folder.name %></a>
         </li>
       <% }) %>
@@ -57,6 +58,8 @@
   </div>
 </body>
 </html>
+
+
 
 
 
