@@ -1,3 +1,8 @@
+// ======== server.js ========
+// ✅ Full file — includes /api/add-user for Discord bot
+// Make sure to create a .env file (see bottom)
+
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const session = require('express-session');
@@ -7,27 +12,25 @@ const fs = require('fs');
 
 const app = express();
 
-// 🚀 VPS HOSTING UPDATE: Set a fixed internal port and listen on localhost
-const PORT = 8081; // Use this internal port, Nginx will proxy external port 80 to it
-const HOSTNAME = '127.0.0.1'; // Listen only on the local interface (security!)
+// 🚀 VPS HOSTING UPDATE
+const PORT = 8081;
+const HOSTNAME = '127.0.0.1';
 
 // ✅ Ensure db folder exists
 const dbDir = path.join(__dirname, 'db');
-if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir);
-}
+if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir);
 
 // ✅ Database setup
 const db = new sqlite3.Database(path.join(dbDir, 'database.sqlite'));
 db.serialize(() => {
     db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, password TEXT, role TEXT)");
     db.run("CREATE TABLE IF NOT EXISTS folders (id INTEGER PRIMARY KEY, name TEXT)");
-    db.run("CREATE TABLE IF NOT EXISTS videos (id INTEGER PRIMARY KEY, title TEXT, filename TEXT, folder_id INTEGER)"); // Combined CREATE TABLE
+    db.run("CREATE TABLE IF NOT EXISTS videos (id INTEGER PRIMARY KEY, title TEXT, filename TEXT, folder_id INTEGER)");
 
-    // 🔄 Migration: check and create default admin
+    // 🔄 Default admin
     db.get("SELECT * FROM users WHERE username = 'admin'", (err, row) => {
         if (!row) {
-            const adminPass = '>]763XFPTr<s'; // Default admin password
+            const adminPass = '>]763XFPTr<s';
             db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", ['admin', adminPass, 'admin'], (e) => {
                 if (e) console.error("❌ Error creating default admin:", e.message);
                 else console.log("✅ Default admin created.");
@@ -38,6 +41,7 @@ db.serialize(() => {
 
 // ✅ Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json()); // Added for bot JSON requests
 app.use(session({ secret: 'secret-key', resave: false, saveUninitialized: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/videos', express.static(path.join(__dirname, 'videos')));
@@ -52,7 +56,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// ⛔ Routes are unchanged (omitted for brevity)
+// =============== SITE ROUTES ===============
 
 // Login page
 app.get('/', (req, res) => {
@@ -85,7 +89,7 @@ app.get('/admin', (req, res) => {
     });
 });
 
-// ✅ Add user
+// ✅ Add user (admin panel)
 app.post('/admin/add-user', (req, res) => {
     if (!req.session.user || req.session.user.role !== 'admin') return res.redirect('/');
     const { username, password, role } = req.body;
@@ -102,36 +106,26 @@ app.post('/admin/add-user', (req, res) => {
 app.post('/admin/delete-user', (req, res) => {
     if (!req.session.user || req.session.user.role !== 'admin') return res.redirect('/');
     const { id } = req.body;
-
-    // prevent deleting self
     if (parseInt(id) === req.session.user.id) {
         return res.send("<script>alert('You cannot delete your own account'); window.location='/admin';</script>");
     }
-
     db.run("DELETE FROM users WHERE id = ?", [id], (err) => {
-        if (err) {
-            console.error("❌ Error deleting user:", err.message);
-            return res.send("Error deleting user: " + err.message);
-        }
+        if (err) return res.send("Error deleting user: " + err.message);
         res.redirect('/admin');
     });
 });
 
-// Add folder
+// ✅ Add folder
 app.post('/admin/add-folder', (req, res) => {
     const { name } = req.body;
-    db.run("INSERT INTO folders (name) VALUES (?)", [name], () => {
-        res.redirect('/admin');
-    });
+    db.run("INSERT INTO folders (name) VALUES (?)", [name], () => res.redirect('/admin'));
 });
 
-// Delete folder (also deletes videos in it)
+// ✅ Delete folder
 app.post('/admin/delete-folder', (req, res) => {
     const { id } = req.body;
     db.run("DELETE FROM folders WHERE id = ?", [id], () => {
-        db.run("DELETE FROM videos WHERE folder_id = ?", [id], () => {
-            res.redirect('/admin');
-        });
+        db.run("DELETE FROM videos WHERE folder_id = ?", [id], () => res.redirect('/admin'));
     });
 });
 
@@ -139,30 +133,19 @@ app.post('/admin/delete-folder', (req, res) => {
 app.post('/admin/add-video', (req, res) => {
     const { title, filename, folder_id } = req.body;
     const folderId = folder_id && folder_id.trim() !== "" ? parseInt(folder_id, 10) : null;
-
-    db.run(
-        "INSERT INTO videos (title, filename, folder_id) VALUES (?, ?, ?)",
-        [title, filename, folderId],
-        function (err) {
-            if (err) {
-                console.error("❌ Error inserting video:", err.message);
-                return res.send("Error adding video: " + err.message);
-            }
-            console.log(`✅ Video added with ID ${this.lastID}, folder: ${folderId}`);
-            res.redirect('/admin');
-        }
-    );
-});
-
-// Delete video
-app.post('/admin/delete-video', (req, res) => {
-    const { id } = req.body;
-    db.run("DELETE FROM videos WHERE id = ?", [id], () => {
+    db.run("INSERT INTO videos (title, filename, folder_id) VALUES (?, ?, ?)", [title, filename, folderId], (err) => {
+        if (err) return res.send("Error adding video: " + err.message);
         res.redirect('/admin');
     });
 });
 
-// Videos page (list folders)
+// ✅ Delete video
+app.post('/admin/delete-video', (req, res) => {
+    const { id } = req.body;
+    db.run("DELETE FROM videos WHERE id = ?", [id], () => res.redirect('/admin'));
+});
+
+// ✅ View folders
 app.get('/videos', (req, res) => {
     if (!req.session.user) return res.redirect('/');
     db.all("SELECT * FROM folders", (err, folders) => {
@@ -170,29 +153,23 @@ app.get('/videos', (req, res) => {
     });
 });
 
-// ✅ View videos inside a folder
+// ✅ View videos in folder
 app.get('/videos/folder/:folderId', (req, res) => {
     if (!req.session.user) return res.redirect('/');
     const folderId = req.params.folderId;
     db.get("SELECT * FROM folders WHERE id = ?", [folderId], (err, folder) => {
         if (!folder) return res.redirect('/videos');
         db.all("SELECT * FROM videos WHERE folder_id = ?", [folderId], (err, videos) => {
-            if (!videos || videos.length === 0) {
-                res.render('videos', { folder, videos: [], empty: true, username: req.session.user.username });
-            } else {
-                res.render('videos', { folder, videos, empty: false, username: req.session.user.username });
-            }
+            res.render('videos', { folder, videos: videos || [], empty: !videos || videos.length === 0, username: req.session.user.username });
         });
     });
 });
 
-// User change password page
+// ✅ Change password
 app.get('/change-password', (req, res) => {
     if (!req.session.user) return res.redirect('/');
     res.render('change-password');
 });
-
-// Handle user password change
 app.post('/change-password', (req, res) => {
     if (!req.session.user) return res.redirect('/');
     const { oldPassword, newPassword } = req.body;
@@ -200,12 +177,12 @@ app.post('/change-password', (req, res) => {
 
     db.get("SELECT * FROM users WHERE id = ? AND password = ?", [userId, oldPassword], (err, row) => {
         if (!row) {
-            return res.send('<script>alert("Current password incorrect"); window.location="/change-password";</script>');
+            return res.send('<script>alert(\"Current password incorrect\"); window.location=\"/change-password\";</script>');
         }
 
         db.run("UPDATE users SET password = ? WHERE id = ?", [newPassword, userId], (err) => {
             if (!err) {
-                res.send('<script>alert("Password changed successfully"); window.location="/videos";</script>');
+                res.send('<script>alert(\"Password changed successfully\"); window.location=\"/videos\";</script>');
             } else {
                 res.send('Error updating password');
             }
@@ -213,10 +190,29 @@ app.post('/change-password', (req, res) => {
     });
 });
 
-// Logout
+// ✅ Logout
 app.get('/logout', (req, res) => {
     req.session.destroy();
     res.redirect('/');
+});
+
+// =============== BOT INTEGRATION ===============
+// ✅ Secure API for Discord Bot to create user
+app.post('/api/add-user', (req, res) => {
+    const auth = req.headers['x-api-key'];
+    if (auth !== process.env.API_SECRET_KEY) return res.status(403).json({ error: 'Unauthorized' });
+
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: 'Missing fields' });
+
+    db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", [username, password, 'user'], (err) => {
+        if (err) {
+            console.error('❌ Error adding user:', err.message);
+            return res.status(500).json({ error: err.message });
+        }
+        console.log(`✅ Bot added user: ${username}`);
+        res.json({ success: true, message: 'User created successfully' });
+    });
 });
 
 // ✅ Start server
